@@ -1,9 +1,9 @@
 [
   {
     "id": "1",
-    "nombre": "SNT Canal 9",
+    "name": "SNT",
     "url": "https://snt.com.py/live/stream.m3u8",
-    "categoría": "Noticias",
+    "category": "Noticias",
     "logo": "📺"
   },
   {
@@ -13,7 +13,6 @@
     "category": "Entretenimiento",
     "logo": "📡"
   },
-  
   {
     "id": "3",
     "nombre": "Monumental Tv",
