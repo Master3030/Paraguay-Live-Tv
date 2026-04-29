@@ -11,14 +11,14 @@
     "nombre": "TELEFUTURO",
     "url": "https://copacogen.desdeparaguay.net/telefuturo/telefuturo_py_alta/media.m3u8?admin=tvaccion",
     "category": "Entretenimiento",
-    "logo": "📡"
+    "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtuUkgO0qfjkYHL5B1M9EvX8DCLEWK8koBT9TA7p9Cmw&s=10"
   },
   {
     "id": "3",
     "nombre": "MONUMENTAL TV",
     "url": "https://copacogen.desdeparaguay.net/monumentaltv/monumentaltv_py_alta/media.m3u8?admin=tvaccion",
     "categoría": "Noticias",
-    "logo": "📡"
+    "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrX6Unod8iZeleuLnbt_SiUi3SNPzVZ109aBIAHyBhJw&s=10"
   },
   {
     "id": "4",
