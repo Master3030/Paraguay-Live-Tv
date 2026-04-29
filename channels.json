@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "name": "SNT Canal 9",
+    "url": "https://snt.com.py/live/stream.m3u8",
+    "category": "Noticias",
+    "logo": "📺"
+  },
+  {
+    "id": "2",
+    "name": "Telefuturo",
+    "url": "https://telefuturo.com.py/live/stream.m3u8",
+    "category": "Entretenimiento",
+    "logo": "📡"
+  }
+]
