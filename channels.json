@@ -1,15 +1,15 @@
 [
   {
     "id": "1",
-    "name": "SNT Canal 9",
+    "nombre": "SNT Canal 9",
     "url": "https://snt.com.py/live/stream.m3u8",
-    "category": "Noticias",
+    "categoría": "Noticias",
     "logo": "📺"
   },
   {
     "id": "2",
-    "name": "Telefuturo",
-    "url": "https://telefuturo.com.py/live/stream.m3u8",
+    "nombre": "Telefuturo",
+    "url": "https://copacogen.desdeparaguay.net/telefuturo/telefuturo_py_alta/media.m3u8?admin=tvaccion",
     "category": "Entretenimiento",
     "logo": "📡"
   }
