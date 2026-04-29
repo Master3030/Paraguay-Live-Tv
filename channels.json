@@ -1,23 +1,23 @@
 [
   {
     "id": "1",
-    "name": "SNT",
+    "nombre": "SNT",
     "url": "https://snt.com.py/live/stream.m3u8",
-    "category": "Noticias",
+    "categoría": "Noticias",
     "logo": "📺"
   },
   {
     "id": "2",
-    "nombre": "Telefuturo",
+    "nombre": "TELEFUTURO",
     "url": "https://copacogen.desdeparaguay.net/telefuturo/telefuturo_py_alta/media.m3u8?admin=tvaccion",
     "category": "Entretenimiento",
     "logo": "📡"
   },
   {
     "id": "3",
-    "nombre": "Monumental Tv",
+    "nombre": "MONUMENTAL TV",
     "url": "https://copacogen.desdeparaguay.net/monumentaltv/monumentaltv_py_alta/media.m3u8?admin=tvaccion",
-    "category": "Entretenimiento",
+    "categoría": "Noticias",
     "logo": "📡"
   }
 ]
