@@ -1,23 +1,23 @@
 // ═══════════════════════════════════════════
-//  Paraguay Live TV — app.js
+//  Paraguay Live TV — app.js (Versión Final)
 // ═══════════════════════════════════════════
 
 const CFG = {
-  adminPass   : 'admin2024',        // ← cambiá esto
-  jsonUrl     : 'channels.json',   // relativo al repo GitHub
-  rewardSecs  : 30,                // duración countdown anuncio
-  rewardMins  : 120,               // minutos que gana por anuncio (2h)
-  maxCreditH  : 24,                // máximo crédito acumulable
-  logoTaps    : 7,                 // taps para abrir admin
-  syncInterval: 30000,             // ms entre sync con GitHub
+  adminPass   : 'admin2024',        // Cambia esta contraseña para tu panel
+  jsonUrl     : 'channels.json',    // Nombre del archivo en tu GitHub
+  rewardSecs  : 30,                 // Segundos que dura el anuncio
+  rewardMins  : 120,                // Minutos de premio (2 horas)
+  maxCreditH  : 24,                 // Máximo de crédito acumulable
+  logoTaps    : 7,                  // Taps en el logo para abrir admin
+  syncInterval: 30000,              // Sincronización cada 30 segundos
 };
 
-// ── STATE ────────────────────────────────────
+// ── ESTADO GLOBAL ────────────────────────────
 let channels = [], filtered = [], activeCat = 'Todos', hls = null;
 let creditSec = 0, timerInt = null, rwInt = null, rwSec = 0;
 let logoTaps = 0, tapTimer = null;
 
-// ── BOOT ─────────────────────────────────────
+// ── INICIO DE LA APP ─────────────────────────
 window.addEventListener('load', () => {
   loadCredit();
   loadLocal();
@@ -26,21 +26,29 @@ window.addEventListener('load', () => {
   applyBanner();
   setupLogo();
   setInterval(fetchRemote, CFG.syncInterval);
-  if ('serviceWorker' in navigator)
+  
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 });
 
-// ── LOGO TAPS (admin oculto) ──────────────────
+// ── ACCESO OCULTO AL PANEL (Taps en Logo) ────
 function setupLogo() {
-  document.getElementById('logoBtn').addEventListener('click', () => {
-    logoTaps++;
-    clearTimeout(tapTimer);
-    tapTimer = setTimeout(() => logoTaps = 0, 2000);
-    if (logoTaps >= CFG.logoTaps) { logoTaps = 0; openLogin(); }
-  });
+  const logo = document.getElementById('logoBtn');
+  if(logo) {
+    logo.addEventListener('click', () => {
+      logoTaps++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => logoTaps = 0, 2000);
+      if (logoTaps >= CFG.logoTaps) { 
+        logoTaps = 0; 
+        openLogin(); 
+      }
+    });
+  }
 }
 
-// ── CREDIT / TIMER ────────────────────────────
+// ── SISTEMA DE CRÉDITOS Y TIEMPO ─────────────
 function loadCredit() {
   const saved = localStorage.getItem('pltv_credit');
   const ts    = parseInt(localStorage.getItem('pltv_ts') || '0');
@@ -48,7 +56,7 @@ function loadCredit() {
     const elapsed = Math.floor((Date.now() - ts) / 1000);
     creditSec = Math.max(0, parseInt(saved) - elapsed);
   } else {
-    creditSec = CFG.rewardMins * 60; // 2h por defecto
+    creditSec = CFG.rewardMins * 60; 
   }
   updateCreditUI();
 }
@@ -76,9 +84,14 @@ function updateCreditUI() {
   const m = Math.floor((creditSec % 3600) / 60);
   const s = creditSec % 60;
   const fmt = `${pad(h)}:${pad(m)}:${pad(s)}`;
-  document.getElementById('creditDisplay').textContent = fmt;
-  document.getElementById('timerClock').textContent    = fmt;
-  document.getElementById('timerProg').style.width     = (creditSec / max * 100) + '%';
+  
+  const display = document.getElementById('creditDisplay');
+  const clock = document.getElementById('timerClock');
+  const prog = document.getElementById('timerProg');
+  
+  if(display) display.textContent = fmt;
+  if(clock) clock.textContent = fmt;
+  if(prog) prog.style.width = (creditSec / max * 100) + '%';
 }
 
 function onCreditEmpty() {
@@ -87,12 +100,13 @@ function onCreditEmpty() {
 }
 
 function showCreditWarning(show) {
-  document.getElementById('noCredit').style.display = show ? 'block' : 'none';
+  const el = document.getElementById('noCredit');
+  if(el) el.style.display = show ? 'block' : 'none';
 }
 
 function pad(n) { return String(n).padStart(2,'0'); }
 
-// ── CHANNELS LOCAL ────────────────────────────
+// ── MANEJO DE CANALES (LOCAL Y REMOTO) ───────
 function loadLocal() {
   const d = localStorage.getItem('pltv_channels');
   if (d) { channels = JSON.parse(d); renderAll(); }
@@ -102,7 +116,6 @@ function saveLocal() {
   localStorage.setItem('pltv_channels', JSON.stringify(channels));
 }
 
-// ── CHANNELS REMOTE (GitHub JSON) ─────────────
 async function fetchRemote() {
   try {
     const r = await fetch(CFG.jsonUrl + '?_=' + Date.now());
@@ -116,20 +129,30 @@ async function fetchRemote() {
   } catch (_) {}
 }
 
-// ── RENDER ────────────────────────────────────
-function renderAll() { renderCats(); doFilter(); }
+// ── RENDERIZADO DE INTERFAZ ──────────────────
+function renderAll() { 
+  renderCats(); 
+  doFilter(); 
+}
 
 function renderCats() {
   const cats = ['Todos', ...new Set(channels.map(c => c.category))];
-  document.getElementById('catsBar').innerHTML = cats.map(c =>
-    `<div class="cat ${c===activeCat?'on':''}" onclick="selCat('${c}')">${c}</div>`
-  ).join('');
+  const bar = document.getElementById('catsBar');
+  if(bar) {
+    bar.innerHTML = cats.map(c =>
+      `<div class="cat ${c === activeCat ? 'on' : ''}" onclick="selCat('${c}')">${c}</div>`
+    ).join('');
+  }
 }
 
-function selCat(c) { activeCat = c; renderAll(); }
+function selCat(c) { 
+  activeCat = c; 
+  renderAll(); 
+}
 
 function doFilter() {
-  const q = document.getElementById('searchQ').value.toLowerCase();
+  const input = document.getElementById('searchQ');
+  const q = input ? input.value.toLowerCase() : "";
   filtered = channels.filter(c =>
     (activeCat === 'Todos' || c.category === activeCat) &&
     (!q || c.name.toLowerCase().includes(q))
@@ -139,6 +162,7 @@ function doFilter() {
 
 function renderGrid() {
   const g = document.getElementById('grid');
+  if (!g) return;
   if (!filtered.length) {
     g.innerHTML = '<div class="empty-msg">📭 No hay canales disponibles</div>';
     return;
@@ -162,27 +186,51 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── PLAYER ────────────────────────────────────
+// ── REPRODUCTOR HLS AVANZADO ─────────────────
 function play(id) {
   if (creditSec <= 0) { openReward(); return; }
+  
   const ch = channels.find(c => c.id == id);
   if (!ch) return;
-  document.getElementById('playerWrap').style.display = 'block';
-  document.getElementById('nowPlaying').textContent   = ch.name;
-  showCreditWarning(false);
+
   const vid = document.getElementById('vid');
+  const wrap = document.getElementById('playerWrap');
+  const now = document.getElementById('nowPlaying');
+  
+  if(wrap) wrap.style.display = 'block';
+  if(now) now.textContent = ch.name;
+  showCreditWarning(false);
+
   if (hls) { hls.destroy(); hls = null; }
+
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-    hls = new Hls({ enableWorker: true });
+    hls = new Hls({ 
+        enableWorker: true,
+        manifestLoadingTimeOut: 15000,
+        levelLoadingTimeOut: 15000,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        startLevel: -1
+    });
     hls.loadSource(ch.url);
     hls.attachMedia(vid);
     hls.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(() => {}));
-    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) toast('⚠️ Error al cargar el canal'); });
+    
+    // Auto-recuperación para streams de SNT/Cloudfront
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      if (data.fatal) {
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR: hls.startLoad(); break;
+          case Hls.ErrorTypes.MEDIA_ERROR: hls.recoverMediaError(); break;
+          default: hls.destroy(); toast('⚠️ Error en stream'); break;
+        }
+      }
+    });
   } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
     vid.src = ch.url;
     vid.play().catch(() => {});
   } else {
-    toast('⚠️ Tu navegador no soporta HLS');
+    toast('⚠️ Formato no soportado');
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -190,11 +238,12 @@ function play(id) {
 function closePlayer() {
   if (hls) { hls.destroy(); hls = null; }
   const vid = document.getElementById('vid');
-  vid.pause(); vid.src = '';
-  document.getElementById('playerWrap').style.display = 'none';
+  if(vid) { vid.pause(); vid.src = ''; }
+  const wrap = document.getElementById('playerWrap');
+  if(wrap) wrap.style.display = 'none';
 }
 
-// ── REWARD MODAL ──────────────────────────────
+// ── SISTEMA DE ANUNCIOS (REWARD) ─────────────
 function openReward() {
   document.getElementById('rewardModal').classList.add('show');
   document.getElementById('claimBtn').style.display = 'none';
@@ -216,11 +265,10 @@ function startRewardCountdown() {
     document.getElementById('rwCount').textContent = rwSec;
     if (rwSec <= 0) {
       clearInterval(rwInt);
-      document.getElementById('rwCount').textContent      = '✓';
+      document.getElementById('rwCount').textContent = '✓';
       document.getElementById('rwCountLabel').textContent = '¡Anuncio completado!';
-      document.getElementById('claimBtn').style.display  = 'inline-block';
-      document.getElementById('rwSkip').style.display    = 'none';
-      // Aquí Android puede llamar a: window.AndroidBridge.onRewardEarned()
+      document.getElementById('claimBtn').style.display = 'inline-block';
+      document.getElementById('rwSkip').style.display = 'none';
     }
   }, 1000);
 }
@@ -233,18 +281,17 @@ function claimReward() {
   showCreditWarning(false);
   closeReward();
   toast(`🏆 +${CFG.rewardMins / 60}h de crédito ganadas`);
-  // Si hay canal parado, intentar retomar
 }
 
-// Llamado desde Android WebView cuando el anuncio rewarded se completa
+// Bridge para Android (Opcional)
 window.onRewardGranted = function() { claimReward(); };
 
-// ── BANNER ────────────────────────────────────
+// ── GESTIÓN DE BANNERS ───────────────────────
 function applyBanner() {
   const code = localStorage.getItem('pltv_banner');
   if (code) {
     const zone = document.getElementById('bannerAd');
-    zone.innerHTML = '<span class="ad-tag">Publicidad</span>' + code;
+    if(zone) zone.innerHTML = '<span class="ad-tag">Publicidad</span>' + code;
   }
 }
 
@@ -255,12 +302,13 @@ function saveBanner() {
   toast('✅ Banner guardado');
 }
 
-// ── ADMIN LOGIN ───────────────────────────────
+// ── LOGIN Y PANEL ADMIN ──────────────────────
 function openLogin() {
   document.getElementById('passInput').value = '';
   document.getElementById('adminLogin').classList.add('show');
 }
 function closeLogin() { document.getElementById('adminLogin').classList.remove('show'); }
+
 function checkPass() {
   if (document.getElementById('passInput').value === CFG.adminPass) {
     closeLogin();
@@ -270,7 +318,6 @@ function checkPass() {
   }
 }
 
-// ── ADMIN PANEL ───────────────────────────────
 function openAdmin() {
   renderAdminList();
   document.getElementById('fBanner').value = localStorage.getItem('pltv_banner') || '';
@@ -281,10 +328,10 @@ function closeAdmin() { document.getElementById('adminPanel').classList.remove('
 
 function renderAdminList() {
   const el = document.getElementById('adminList');
-  if (!channels.length) { el.innerHTML = '<p style="color:var(--text2);font-size:13px;">Sin canales aún.</p>'; return; }
+  if (!channels.length) { el.innerHTML = '<p style="color:var(--text2);">Sin canales.</p>'; return; }
   el.innerHTML = channels.map(c => `
     <div class="ch-admin-item">
-      <span class="ico">${(!c.logo||c.logo.startsWith('http')) ? '📺' : c.logo}</span>
+      <span class="ico">${(!c.logo || c.logo.startsWith('http')) ? '📺' : c.logo}</span>
       <div class="inf">
         <div class="n">${escHtml(c.name)}</div>
         <div class="u">${escHtml(c.url)}</div>
@@ -309,18 +356,21 @@ function saveChannel() {
   const url  = document.getElementById('fUrl').value.trim();
   const cat  = document.getElementById('fCat').value;
   const logo = document.getElementById('fLogo').value.trim();
-  if (!name || !url) { toast('⚠️ Nombre y URL requeridos'); return; }
+  
+  if (!name || !url) { toast('⚠️ Datos incompletos'); return; }
+  
   if (id) {
     const i = channels.findIndex(c => c.id == id);
     if (i >= 0) channels[i] = { id, name, url, category: cat, logo };
   } else {
     channels.push({ id: Date.now().toString(), name, url, category: cat, logo });
   }
+  
   saveLocal();
   renderAll();
   renderAdminList();
   clearForm();
-  toast(id ? '✅ Canal actualizado' : '✅ Canal agregado');
+  toast('✅ Guardado correctamente');
 }
 
 function editChannel(id) {
@@ -331,17 +381,15 @@ function editChannel(id) {
   document.getElementById('fUrl').value   = c.url;
   document.getElementById('fCat').value   = c.category;
   document.getElementById('fLogo').value  = c.logo || '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
   toast('✏️ Editando: ' + c.name);
 }
 
 function delChannel(id) {
-  if (!confirm('¿Eliminar este canal?')) return;
+  if (!confirm('¿Eliminar canal?')) return;
   channels = channels.filter(c => c.id != id);
   saveLocal();
   renderAll();
   renderAdminList();
-  toast('🗑 Canal eliminado');
 }
 
 function exportJSON() {
@@ -351,13 +399,14 @@ function exportJSON() {
   a.href     = URL.createObjectURL(blob);
   a.download = 'channels.json';
   a.click();
-  toast('📤 channels.json descargado — subilo a GitHub');
+  toast('📤 Archivo descargado');
 }
 
-// ── TOAST ─────────────────────────────────────
+// ── TOAST NOTIFICACIÓN ───────────────────────
 let toastTimer = null;
 function toast(msg) {
   const el = document.getElementById('toast');
+  if(!el) return;
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
