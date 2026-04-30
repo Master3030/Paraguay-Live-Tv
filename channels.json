@@ -1,45 +1,44 @@
 [
   {
     "id": "1",
-    "nombre": "SNT",
-    "url": "https://d2qsan2ut81n2k.cloudfront.net/live/c8f2b704-5f54-4712-8813-f4c084f70624/ts:abr.m3u8",
-    "categoría": "Noticias",
-    "logo": "📺"
+    "name": "SNT Canal 9",
+    "url": "https://d2qsan2ut81n2k.cloudfront.net/live/2e1f1b6a-9d03-4194-8559-2eabe61a1555/ts:abr.m3u8",
+    "category": "Noticias",
+    "logo": "https://www.snt.com.py/wp-content/uploads/2019/06/snt-logo.png"
   },
   {
     "id": "2",
-    "nombre": "TELEFUTURO",
+    "name": "Telefuturo",
     "url": "https://copacogen.desdeparaguay.net/telefuturo/telefuturo_py_alta/media.m3u8?admin=tvaccion",
     "category": "Entretenimiento",
-    "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtuUkgO0qfjkYHL5B1M9EvX8DCLEWK8koBT9TA7p9Cmw&s=10"
+    "logo": "https://telefuturo.com.py/img/logo.png"
   },
   {
     "id": "3",
-    "nombre": "MONUMENTAL TV",
+    "name": "Monumental TV",
     "url": "https://copacogen.desdeparaguay.net/monumentaltv/monumentaltv_py_alta/media.m3u8?admin=tvaccion",
-    "categoría": "Noticias",
-    "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrX6Unod8iZeleuLnbt_SiUi3SNPzVZ109aBIAHyBhJw&s=10"
+    "category": "Noticias",
+    "logo": "https://monumental.com.py/wp-content/uploads/2021/04/logo-monumental.png"
   },
   {
     "id": "4",
-    "nombre": "NPY",
+    "name": "NPY",
     "url": "https://copacogen.desdeparaguay.net/npy/npy_py_alta/media.m3u8?admin=tvaccion",
-    "categoría": "Noticias",
-    "logo": "📡"
+    "category": "Noticias",
+    "logo": "https://npy.com.py/wp-content/themes/npy/img/logo-npy.png"
   },
   {
     "id": "5",
-    "nombre": "CANAL PRO",
+    "name": "Canal PRO",
     "url": "https://www.desde-paraguay.com/pro.m3u8",
-    "categoría": "Entretenimiento",
+    "category": "Entretenimiento",
     "logo": "📡"
   },
   {
     "id": "6",
-    "nombre": "POPU TV",
+    "name": "Popu TV",
     "url": "https://copacogen.desdeparaguay.net/universotv/universotv_py_alta/playlist.m3u8?admin=nacion",
-    "categoría": "Entretenimiento",
+    "category": "Entretenimiento",
     "logo": "📡"
   }
-  
 ]
