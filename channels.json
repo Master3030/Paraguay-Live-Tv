@@ -33,6 +33,13 @@
     "url": "https://www.desde-paraguay.com/pro.m3u8",
     "categoría": "Entretenimiento",
     "logo": "📡"
+  },
+  {
+    "id": "6",
+    "nombre": "POPU TV",
+    "url": "https://copacogen.desdeparaguay.net/universotv/universotv_py_alta/playlist.m3u8?admin=nacion",
+    "categoría": "Entretenimiento",
+    "logo": "📡"
   }
   
 ]
