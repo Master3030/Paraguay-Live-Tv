@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-//  Paraguay Live TV — app.js
+//  Paraguay Live TV — app.js (MEJORADO)
 // ═══════════════════════════════════════════
 
 const CFG = {
@@ -10,6 +10,8 @@ const CFG = {
   maxCreditH  : 24,                // máximo crédito acumulable
   logoTaps    : 7,                 // taps para abrir admin
   syncInterval: 30000,             // ms entre sync con GitHub
+  useCorsProxy: true,              // ← Activar proxy CORS para streams bloqueados
+  corsProxyUrl: 'https://corsproxy.io/?', // Proxy CORS público
 };
 
 // ── STATE ────────────────────────────────────
@@ -26,9 +28,20 @@ window.addEventListener('load', () => {
   applyBanner();
   setupLogo();
   setInterval(fetchRemote, CFG.syncInterval);
-  if ('serviceWorker' in navigator)
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  console.log('📺 Paraguay Live TV - Iniciado');
+  console.log('💡 Tip: Usa debugStream("url") en consola para probar streams');
 });
+
+// ── HELPER PARA DEBUG ──────────────────────────
+window.debugStream = function(url) {
+  console.log('🔍 Probando stream:', url);
+  fetch(url, { method: 'HEAD', mode: 'no-cors' })
+    .then(r => console.log('✅ Stream accesible', r))
+    .catch(e => console.error('❌ Stream no accesible:', e));
+};
 
 // ── LOGO TAPS (admin oculto) ──────────────────
 function setupLogo() {
@@ -95,7 +108,15 @@ function pad(n) { return String(n).padStart(2,'0'); }
 // ── CHANNELS LOCAL ────────────────────────────
 function loadLocal() {
   const d = localStorage.getItem('pltv_channels');
-  if (d) { channels = JSON.parse(d); renderAll(); }
+  if (d) { 
+    try {
+      channels = JSON.parse(d); 
+      console.log('📦 Canales cargados del localStorage:', channels.length);
+      renderAll(); 
+    } catch(e) {
+      console.error('Error al cargar canales locales:', e);
+    }
+  }
 }
 
 function saveLocal() {
@@ -112,6 +133,7 @@ async function fetchRemote() {
       channels = data;
       saveLocal();
       renderAll();
+      console.log('🔄 Canales sincronizados desde GitHub:', channels.length);
     }
   } catch (_) {}
 }
@@ -145,7 +167,7 @@ function renderGrid() {
   }
   g.innerHTML = filtered.map(c => {
     const thumb = c.logo && c.logo.startsWith('http')
-      ? `<img src="${c.logo}" onerror="this.outerHTML='<span style=font-size:36px>${escHtml(c.logo||'📺')}</span>'"/>`
+      ? `<img src="${c.logo}" onerror="this.outerHTML='<span style=font-size:36px>${escHtml(c.logo||'📺')}</span>'" alt="${escHtml(c.name)}"/>`
       : `<span style="font-size:36px">${c.logo || '📺'}</span>`;
     return `
     <div class="ch-card" onclick="play('${c.id}')">
@@ -162,36 +184,207 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── PLAYER ────────────────────────────────────
+// ── PLAYER (MEJORADO) ────────────────────────────────────
 function play(id) {
   if (creditSec <= 0) { openReward(); return; }
   const ch = channels.find(c => c.id == id);
-  if (!ch) return;
+  if (!ch) {
+    toast('⚠️ Canal no encontrado');
+    return;
+  }
+  
+  console.log('▶️ Reproduciendo:', ch.name);
+  console.log('📡 URL original:', ch.url);
+  
   document.getElementById('playerWrap').style.display = 'block';
-  document.getElementById('nowPlaying').textContent   = ch.name;
+  document.getElementById('nowPlaying').innerHTML = 
+    '<span class="live-indicator"><span class="live-dot"></span>EN VIVO</span> ' + escHtml(ch.name);
   showCreditWarning(false);
+  
   const vid = document.getElementById('vid');
-  if (hls) { hls.destroy(); hls = null; }
+  
+  // Limpiar instancia anterior
+  if (hls) { 
+    hls.destroy(); 
+    hls = null; 
+  }
+  
+  // Detener y limpiar video
+  vid.pause();
+  vid.removeAttribute('src');
+  vid.load();
+  
+  // Aplicar proxy CORS si está activado
+  let playUrl = ch.url;
+  if (CFG.useCorsProxy && (ch.url.includes('cloudfront.net') || ch.url.includes('akamai'))) {
+    playUrl = CFG.corsProxyUrl + encodeURIComponent(ch.url);
+    console.log('🔧 Usando proxy CORS:', playUrl);
+  }
+  
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-    hls = new Hls({ enableWorker: true });
-    hls.loadSource(ch.url);
-    hls.attachMedia(vid);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(() => {}));
-    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) toast('⚠️ Error al cargar el canal'); });
+    initializeHls(playUrl, vid, ch);
   } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-    vid.src = ch.url;
+    // Para Safari/iOS
+    console.log('📱 Usando reproductor nativo de Safari');
+    vid.src = playUrl;
     vid.play().catch(() => {});
   } else {
     toast('⚠️ Tu navegador no soporta HLS');
   }
+  
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function initializeHls(url, vid, channel) {
+  hls = new Hls({
+    enableWorker: true,
+    debug: false, // Cambiar a true para depuración detallada
+    lowLatencyMode: false,
+    backBufferLength: 90,
+    maxBufferLength: 30,
+    maxMaxBufferLength: 600,
+    // Timeouts más largos para streams problemáticos
+    manifestLoadingTimeOut: 20000,
+    manifestLoadingMaxRetry: 3,
+    levelLoadingTimeOut: 20000,
+    levelLoadingMaxRetry: 4,
+    fragLoadingTimeOut: 20000,
+    fragLoadingMaxRetry: 6,
+    // Configuración CORS
+    xhrSetup: function(xhr, url) {
+      xhr.withCredentials = false;
+    }
+  });
+  
+  // Manejo detallado de errores
+  hls.on(Hls.Events.ERROR, function (event, data) {
+    console.error('❌ Error HLS:', data.type, data.details, data.fatal);
+    
+    if (data.fatal) {
+      switch (data.type) {
+        case Hls.ErrorTypes.NETWORK_ERROR:
+          console.error('🔴 Error de red fatal');
+          if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR ||
+              data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT) {
+            toast('⚠️ No se puede acceder al stream. Probando método alternativo...');
+            tryAlternativePlayback(channel, vid);
+          } else {
+            hls.recoverMediaError();
+          }
+          break;
+          
+        case Hls.ErrorTypes.MEDIA_ERROR:
+          console.error('🔴 Error de medio fatal');
+          if (data.details === Hls.ErrorDetails.BUFFER_APPENDING_ERROR ||
+              data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+            toast('⚠️ Problema de buffer. Reintentando...');
+          }
+          hls.recoverMediaError();
+          break;
+          
+        default:
+          console.error('🔴 Error fatal desconocido');
+          hls.destroy();
+          hls = null;
+          tryAlternativePlayback(channel, vid);
+          break;
+      }
+    }
+  });
+  
+  // Evento cuando el manifiesto se carga correctamente
+  hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+    console.log('✅ Stream cargado:', data.levels.length, 'calidades disponibles');
+    vid.play().catch(e => {
+      console.log('🔇 Autoplay bloqueado:', e);
+      toast('▶️ Presiona play para iniciar');
+    });
+  });
+  
+  // Evento cuando comienza a reproducir fragmentos
+  hls.on(Hls.Events.FRAG_BUFFERED, function () {
+    console.log('📦 Fragmento cargado exitosamente');
+  });
+  
+  // Evento cuando cambia de nivel de calidad
+  hls.on(Hls.Events.LEVEL_SWITCHED, function (event, data) {
+    console.log('📊 Cambio de calidad al nivel:', data.level);
+  });
+  
+  console.log('🔄 Cargando stream...');
+  hls.loadSource(url);
+  hls.attachMedia(vid);
+}
+
+// Función alternativa para streams con problemas
+function tryAlternativePlayback(channel, vid) {
+  console.log('🔧 Intentando método alternativo para:', channel.name);
+  
+  // Primero verificar si el stream es accesible
+  fetch(channel.url, { 
+    method: 'HEAD',
+    mode: 'no-cors',
+    cache: 'no-cache'
+  })
+  .then(response => {
+    console.log('✅ Stream accesible, reintentando con nueva configuración...');
+    
+    // Limpiar instancia anterior
+    if (hls) { hls.destroy(); hls = null; }
+    
+    // Crear nueva instancia con configuración más permisiva
+    hls = new Hls({
+      enableWorker: true,
+      debug: true, // Activar debug para ver qué falla
+      lowLatencyMode: false,
+      // Configuración CORS más agresiva
+      xhrSetup: function(xhr, url) {
+        xhr.withCredentials = false;
+        xhr.setRequestHeader('Access-Control-Request-Headers', '*');
+        xhr.setRequestHeader('Origin', window.location.origin);
+      },
+      // Reintentos más agresivos
+      manifestLoadingMaxRetry: 5,
+      levelLoadingMaxRetry: 5,
+      fragLoadingMaxRetry: 5
+    });
+    
+    hls.loadSource(channel.url);
+    hls.attachMedia(vid);
+    
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      console.log('✅ Stream alternativo cargado exitosamente');
+      vid.play().catch(() => {});
+      toast('✅ Stream conectado exitosamente');
+    });
+    
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      console.error('❌ Error en método alternativo:', data);
+      if (data.fatal) {
+        toast('❌ No se pudo reproducir el stream. Intenta más tarde.');
+        closePlayer();
+      }
+    });
+  })
+  .catch(() => {
+    console.error('❌ Stream completamente inaccesible');
+    toast('❌ Stream no disponible. Verifica tu conexión o intenta más tarde.');
+    closePlayer();
+  });
+}
+
 function closePlayer() {
-  if (hls) { hls.destroy(); hls = null; }
+  console.log('🛑 Cerrando reproductor');
+  if (hls) { 
+    hls.destroy(); 
+    hls = null; 
+  }
   const vid = document.getElementById('vid');
-  vid.pause(); vid.src = '';
+  vid.pause();
+  vid.removeAttribute('src');
+  vid.load();
   document.getElementById('playerWrap').style.display = 'none';
+  document.getElementById('nowPlaying').textContent = 'CANAL';
 }
 
 // ── REWARD MODAL ──────────────────────────────
@@ -281,7 +474,10 @@ function closeAdmin() { document.getElementById('adminPanel').classList.remove('
 
 function renderAdminList() {
   const el = document.getElementById('adminList');
-  if (!channels.length) { el.innerHTML = '<p style="color:var(--text2);font-size:13px;">Sin canales aún.</p>'; return; }
+  if (!channels.length) { 
+    el.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;">Sin canales aún.</p>'; 
+    return; 
+  }
   el.innerHTML = channels.map(c => `
     <div class="ch-admin-item">
       <span class="ico">${(!c.logo||c.logo.startsWith('http')) ? '📺' : c.logo}</span>
@@ -363,3 +559,10 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
+
+// ── CONSOLA DE BIENVENIDA ──────────────────────
+console.log('🎬 Paraguay Live TV - Sistema de TV en Vivo');
+console.log('📋 Comandos disponibles:');
+console.log('  debugStream("url") - Probar si un stream es accesible');
+console.log('  channels - Ver lista de canales cargados');
+console.log('  creditSec - Ver crédito actual en segundos');
